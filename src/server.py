@@ -1,5 +1,6 @@
 import base64
 import json
+import io
 import sys
 import time
 import traceback
@@ -108,6 +109,12 @@ def format_value(val, fmt):
             raise Exception(f'could not convert: {msg}')
         elif fmt == 'tuple':
             return [format_value(x, t) for (x, t) in zip(val, args)]
+        elif fmt == 'media':
+            mime = args[0]
+            assert mime == 'image/png'
+            buf = io.BytesIO()
+            val.savefig(buf, format='png', bbox_inches='tight')
+            return format_value(buf.getvalue(), 'bytes')
     raise Exception(f'unexpected format: {fmt}')
 
 while True:

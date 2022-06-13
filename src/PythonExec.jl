@@ -4,7 +4,7 @@ import Base64
 import CondaPkg
 import JSON3
 
-export PyServer, PyBuffer, pyexec
+export PyServer, PyBuffer, PyMedia, PyPNG, pyexec
 
 const SERVER_PY = joinpath(@__DIR__, "server.py")
 
@@ -23,6 +23,17 @@ struct PyBuffer
     ndim::Int
     shape::Vector{Int}
     data::Vector{UInt8}
+end
+
+struct PyMedia{M<:MIME}
+    data::Vector{UInt8}
+end
+
+const PyPNG = PyMedia{MIME"image/png"}
+
+function Base.show(io::IO, mime::M, media::PyMedia{M}) where {M<:MIME}
+    write(io, media.data)
+    return
 end
 
 function PyServer()
@@ -79,6 +90,7 @@ type_to_format(::Type{Array{T,N} where {T}}) where {N} = ("array", "any", N)
 type_to_format(::Type{Array{T,N}}) where {T,N} = ("array", type_to_format(T), N)
 type_to_format(::Type{Tuple}) = "tuple"
 type_to_format(::Type{T}) where {T<:Tuple} = ("tuple", map(type_to_format, T.parameters)...)
+type_to_format(::Type{PyMedia{MIME{M}}}) where {M} = ("media", string(M))
 function type_to_format(::Type{T}) where {T}
     if T isa Union
         return ("union", type_to_format(T.a), type_to_format(T.b))
@@ -181,6 +193,11 @@ function handle_value(::Type{A}, val) where {A<:Array}
     else
         error("cannot happen")
     end
+end
+
+function handle_value(::Type{PyMedia{M}}, val) where {M}
+    data = Base64.base64decode(val)
+    return PyMedia{M}(data)
 end
 
 function pyexec(::Type{T}, py::PyServer, code::AbstractString; scope=nothing, locals=NamedTuple()) where {T}
