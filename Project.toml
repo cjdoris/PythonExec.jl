@@ -1,0 +1,9 @@
+name = "PythonExec"
+uuid = "32dc0739-1a04-4cdd-8a83-67fcf0e8a79c"
+authors = ["Christopher Doris <github.com/cjdoris>"]
+version = "0.1.0"
+
+[deps]
+Base64 = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
+CondaPkg = "992eb4ea-22a4-4c89-a5bb-47a3300528ab"
+JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
