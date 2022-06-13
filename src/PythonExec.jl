@@ -16,6 +16,15 @@ mutable struct PyServer
     end
 end
 
+const DEFAULT_SERVER = Ref{PyServer}()
+
+function default_server()
+    if !isassigned(DEFAULT_SERVER)
+        DEFAULT_SERVER[] = PyServer()
+    end
+    return DEFAULT_SERVER[]
+end
+
 struct PyBuffer
     format::String
     itemsize::Int
@@ -30,6 +39,7 @@ struct PyMedia{M<:MIME}
 end
 
 const PyPNG = PyMedia{MIME"image/png"}
+const PyHTML = PyMedia{MIME"text/html"}
 
 function Base.show(io::IO, mime::M, media::PyMedia{M}) where {M<:MIME}
     write(io, media.data)
@@ -200,11 +210,11 @@ function handle_value(::Type{PyMedia{M}}, val) where {M}
     return PyMedia{M}(data)
 end
 
-function pyexec(::Type{T}, py::PyServer, code::AbstractString; scope=nothing, locals=NamedTuple()) where {T}
+function pyexec(::Type{T}, code::AbstractString; server::PyServer=default_server(), scope=nothing, locals=NamedTuple()) where {T}
     format = type_to_format(T)
-    send(py, (; tag="exec", code, scope, locals, format))
+    send(server, (; tag="exec", code, scope, locals, format))
     while true
-        ans = recv(py)
+        ans = recv(server)
         tag = ans.tag::String
         if tag == "result"
             if T == Nothing
@@ -220,7 +230,7 @@ function pyexec(::Type{T}, py::PyServer, code::AbstractString; scope=nothing, lo
     end
 end
 
-pyexec(py::PyServer, code::AbstractString; kw...) = pyexec(Any, py, code; kw...)
+pyexec(code::AbstractString; kw...) = pyexec(Any, code; kw...)
 
 function Base.close(py::PyServer)
     if py.open
