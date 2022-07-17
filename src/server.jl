@@ -227,7 +227,15 @@ deserialize(::Type{T}, val, server) where {T<:Integer} = convert(T, _deserialize
 
 get_format(::Type{<:AbstractFloat}) = "float"
 
-_deserialize_float(val, server) = val::Float64
+function _deserialize_float(val, server)
+    if val isa Float64
+        return val
+    elseif val isa Int
+        return convert(Float64, val)
+    else
+        return convert(Float64, val)::Float64
+    end
+end
 
 deserialize(::Type{T}, val, server) where {T<:AbstractFloat} = convert(T, _deserialize_float(val, server))::T
 
